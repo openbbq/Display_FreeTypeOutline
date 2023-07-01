@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-// gcc gen.cpp $(pkg-config --cflags freetype2 --libs) && ./a.out >out.txt
+#include <vector>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -52,6 +52,63 @@ void put(ofstream &o, FT_Pos n)
     o.put(n).put(n >> 8).put(n >> 16).put(n >> 24);
 }
 
+FT_ULong charcode;
+
+struct UName
+{
+    UName(uint16_t cc) : charcode(cc) {}
+
+    uint16_t charcode;
+};
+
+std::ostream &operator<<(std::ostream &out, UName const &value)
+{
+    return out << "u" << setfill('0') << setw(4) << hex << uppercase << value.charcode;
+}
+
+struct FirstAndCount
+{
+    uint16_t first;
+    uint16_t count;
+};
+
+std::ostream &operator<<(std::ostream &out, FirstAndCount const &value)
+{
+    return out << "{0x" << setfill('0') << setw(4) << hex << uppercase << value.first << ", " << dec << value.count << "}";
+}
+
+std::ostream &
+operator<<(std::ostream &out, FT_Glyph_Metrics const &metrics)
+{
+    return out << "{" << dec
+               << metrics.width << ","
+               << metrics.height << ","
+               << metrics.horiBearingX << ","
+               << metrics.horiBearingY << ","
+               << metrics.horiAdvance << ","
+               << metrics.vertBearingX << ","
+               << metrics.vertBearingY << ","
+               << metrics.vertAdvance
+               << "}";
+}
+
+std::ostream &operator<<(std::ostream &out, FT_Outline const &outline)
+{
+    return out << "{"
+               << dec << outline.n_contours << ", "
+               << dec << outline.n_points << ", "
+               << "u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_points, "
+               << "u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_tags, "
+               << "u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_contours, "
+               << "0x" << hex << outline.flags
+               << "}";
+}
+
+std::ostream &operator<<(std::ostream &out, FT_GlyphSlot slot)
+{
+    return out << "{" << slot->metrics << ", " << slot->outline << "}";
+}
+
 int main(int argc, const char *const *argv)
 {
     FT_Library library;
@@ -61,7 +118,8 @@ int main(int argc, const char *const *argv)
 
     ofstream outfile;
     OutputFormat format = OUTPUT_HEADER;
-    bool only_ascii = false;
+    bool include_unicode = false;
+    bool include_font = true;
     const char *ns = nullptr;
 
     while (argc > 1 && argv[1][0] == '-')
@@ -118,9 +176,26 @@ int main(int argc, const char *const *argv)
             }
             break;
 
-        case 'a':
-            only_ascii = true;
+        case 'i':
+        case 'x':
+        {
+            bool value = arg[1] == 'i';
+            for (arg += 2; *arg; arg++)
+            {
+                switch (*arg)
+                {
+                case 'U':
+                    include_unicode = value;
+                    break;
+                case 'F':
+                    include_font = value;
+                    break;
+                default:
+                    usage();
+                }
+            }
             break;
+        }
 
         default:
             usage();
@@ -163,15 +238,18 @@ int main(int argc, const char *const *argv)
         // for (int i = 0; i < face->num_charmaps; i++)
         // {
         //    FT_Set_Charmap(face, face->charmaps[i]);
-        FT_ULong charcode;
+        // FT_ULong charcode;
+        std::vector<uint16_t> charcodes;
         FT_UInt gindex;
         charcode = FT_Get_First_Char(face, &gindex);
         while (gindex)
         {
             // printf("      0x%04lx => %d\n", charcode, gindex);
 
-            if (only_ascii == false || (charcode >= 0x20 && charcode < 0x7f))
+            if (charcode < 0x10000 && (include_unicode || (charcode >= 0x20 && charcode < 0x7f)))
             {
+                UName uname(charcode);
+                charcodes.push_back(charcode);
                 ++chn;
                 error = FT_Load_Glyph(face,
                                       gindex,
@@ -184,7 +262,7 @@ int main(int argc, const char *const *argv)
                 switch (format)
                 {
                 case OUTPUT_HEADER:
-                    outfile << "FT_Vector u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_points["
+                    outfile << "FT_Vector " << uname << "_points["
                             << dec << face->glyph->outline.n_points << "] = {";
                     for (int i = 0; i != face->glyph->outline.n_points; ++i)
                     {
@@ -194,7 +272,7 @@ int main(int argc, const char *const *argv)
                     }
                     outfile << "};" << endl;
 
-                    outfile << "char u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_tags["
+                    outfile << "char " << uname << "_tags["
                             << dec << face->glyph->outline.n_points << "] = {";
                     for (int i = 0; i != face->glyph->outline.n_points; ++i)
                     {
@@ -202,7 +280,7 @@ int main(int argc, const char *const *argv)
                     }
                     outfile << "};" << endl;
 
-                    outfile << "short u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_contours["
+                    outfile << "short " << uname << "_contours["
                             << dec << face->glyph->outline.n_contours << "] = {";
                     for (int i = 0; i != face->glyph->outline.n_contours; ++i)
                     {
@@ -210,15 +288,8 @@ int main(int argc, const char *const *argv)
                     }
                     outfile << "};" << endl;
 
-                    outfile << "FT_Outline u" << setfill('0') << setw(4) << hex << uppercase << charcode
-                            << " = {"
-                            << dec << face->glyph->outline.n_contours << ", "
-                            << dec << face->glyph->outline.n_points << ", "
-                            << "u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_points, "
-                            << "u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_tags, "
-                            << "u" << setfill('0') << setw(4) << hex << uppercase << charcode << "_contours, "
-                            << "0x" << hex << face->glyph->outline.flags
-                            << "};" << endl
+                    outfile << "FT_GlyphSlotRec_ " << uname
+                            << " = " << face->glyph << ";" << endl
                             << endl;
 
                     break;
@@ -241,6 +312,49 @@ int main(int argc, const char *const *argv)
             }
 
             charcode = FT_Get_Next_Char(face, charcode, &gindex);
+        }
+
+        if (include_font)
+        {
+            outfile << "FT_GlyphSlotRec_ font_glyphs[] = {" << endl;
+            for (auto it = charcodes.begin(); it != charcodes.end(); ++it)
+            {
+                outfile << "  " << UName(*it) << ",";
+                if (*it >= 0x20 && *it < 0x7f)
+                {
+                    outfile << " // '" << (char)*it << "'";
+                }
+                outfile << endl;
+            }
+            outfile << "}; // font_glyphs" << endl
+                    << endl;
+
+            FirstAndCount entry;
+            outfile << "GlyphRange font_ranges[] = {" << endl;
+            for (auto it = charcodes.begin(); it != charcodes.end(); ++it)
+            {
+                if (it == charcodes.begin())
+                {
+                    entry.first = *it;
+                    entry.count = 1;
+                    continue;
+                }
+                if (entry.first + entry.count == *it)
+                {
+                    entry.count += 1;
+                    continue;
+                }
+                outfile << "  " << entry << "," << endl;
+                entry.first = *it;
+                entry.count = 1;
+            }
+            outfile << "  " << entry << "," << endl;
+            outfile << "  " << FirstAndCount{0, 0} << "," << endl;
+            outfile << "}; // font_ranges" << endl
+                    << endl;
+
+            outfile << "GlyphFont font = {font_glyphs, font_ranges};" << endl
+                    << endl;
         }
 
         FT_Done_Face(face);

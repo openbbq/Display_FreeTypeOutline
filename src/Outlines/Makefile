@@ -1,17 +1,12 @@
 
-GEN=../../tools/gen
+GEN=../../bin/gen
 
 default: Roboto-Light.h MaterialIcons-Regular.h
 	ls -la
 
 Roboto-Light.h: Roboto-Light.ttf $(GEN)
-	$(GEN) -wH -nroboto::light -o $@ $<
-
-Roboto-Light.fto: Roboto-Light.ttf $(GEN)
-	$(GEN) -wB -a -o $@ $<
+	$(GEN) -wH -iF -xU -nroboto::light -o $@ $<
 
 MaterialIcons-Regular.h: MaterialIcons-Regular.ttf $(GEN)
-	$(GEN) -wH -nmaterialicons::regular -o $@ $<
+	$(GEN) -wH -xF -iU -nmaterialicons::regular -o $@ $<
 
-MaterialIcons-Regular.fto: MaterialIcons-Regular.ttf $(GEN)
-	$(GEN) -wB -o $@ $<

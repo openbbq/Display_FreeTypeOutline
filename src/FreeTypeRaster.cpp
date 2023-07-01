@@ -1,6 +1,4 @@
-
 #include <Arduino.h>
-#include "Display_FreeTypeOutline.h"
 #include "FreeTypeRaster.h"
 
 void *ft_alloc(FT_Memory memory, long size)
