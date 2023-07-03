@@ -75,6 +75,11 @@ void FreeTypePrinter::drawSpans(int32_t yRaster, int32_t count, const FreeTypeSp
         uint16_t fg = this->_foreground;
         uint16_t bg = this->_background;
         uint16_t bg_alpha = 255 - fg_alpha;
+
+        // NOTE: boost foreground for appearance
+        bg_alpha = bg_alpha * 3 / 4;
+        fg_alpha = 255 - bg_alpha;
+
         uint16_t c = UINT565_COLOR((UINT565_R(fg) * fg_alpha + UINT565_R(bg) * bg_alpha) >> 8,
                                    (UINT565_G(fg) * fg_alpha + UINT565_G(bg) * bg_alpha) >> 8,
                                    (UINT565_B(fg) * fg_alpha + UINT565_B(bg) * bg_alpha) >> 8);

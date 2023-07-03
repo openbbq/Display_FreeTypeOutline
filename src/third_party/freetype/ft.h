@@ -21,6 +21,24 @@ struct FT_Glyph_Metrics
     FT_Pos vertAdvance;
 };
 
+typedef uint16_t FT_UShort;
+typedef int32_t FT_Fixed;
+
+typedef struct FT_Size_Metrics_
+{
+    FT_UShort x_ppem; /* horizontal pixels per EM               */
+    FT_UShort y_ppem; /* vertical pixels per EM                 */
+
+    FT_Fixed x_scale; /* scaling values used to convert font    */
+    FT_Fixed y_scale; /* units to 26.6 fractional pixels        */
+
+    FT_Pos ascender;    /* ascender in 26.6 frac. pixels          */
+    FT_Pos descender;   /* descender in 26.6 frac. pixels         */
+    FT_Pos height;      /* text height in 26.6 frac. pixels       */
+    FT_Pos max_advance; /* max horizontal advance, in 26.6 pixels */
+
+} FT_Size_Metrics;
+
 struct FT_GlyphSlotRec_
 {
     FT_Glyph_Metrics metrics;
@@ -39,4 +57,5 @@ struct GlyphFont
 {
     FT_GlyphSlotRec_ *glyphs;
     GlyphRange *ranges;
+    FT_Size_Metrics metrics;
 };

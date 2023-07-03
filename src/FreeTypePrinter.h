@@ -21,11 +21,11 @@ public:
         _param = param;
     }
 
-    void setFont(FreeTypeFont &value) { _font = &value; }
-    void setFont(FreeTypeFont *value) { _font = value; }
+    void setFont(const FreeTypeFont &value) { _font = &value; }
+    void setFont(const FreeTypeFont *value) { _font = value; }
     void setFont(const GlyphFont &value) { setFont(_wrapper = FreeTypeFont(value)); }
     void setFont(const GlyphFont *value) { setFont(_wrapper = FreeTypeFont(value)); }
-    FreeTypeFont *getFont() const { return _font; }
+    const FreeTypeFont *getFont() const { return _font; }
 
     void setForeground(uint16_t value) { _foreground = value; }
     uint16_t getForeground() const { return _foreground; }
@@ -72,7 +72,7 @@ protected:
     void *_param;
 
     FreeTypeRaster *_raster;
-    FreeTypeFont *_font;
+    const FreeTypeFont *_font;
     FreeTypeFont _wrapper;
 
     int16_t _x = 0;

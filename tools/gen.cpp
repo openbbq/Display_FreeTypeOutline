@@ -77,8 +77,7 @@ std::ostream &operator<<(std::ostream &out, FirstAndCount const &value)
     return out << "{0x" << setfill('0') << setw(4) << hex << uppercase << value.first << ", " << dec << value.count << "}";
 }
 
-std::ostream &
-operator<<(std::ostream &out, FT_Glyph_Metrics const &metrics)
+std::ostream &operator<<(std::ostream &out, FT_Glyph_Metrics const &metrics)
 {
     return out << "{" << dec
                << metrics.width << ","
@@ -109,6 +108,20 @@ std::ostream &operator<<(std::ostream &out, FT_GlyphSlot slot)
     return out << "{" << slot->metrics << ", " << slot->outline << "}";
 }
 
+std::ostream &operator<<(std::ostream &out, FT_Size_Metrics const &metrics)
+{
+    return out << "{" << endl
+               << setw(8) << setfill(' ') << metrics.x_ppem << ", // x_ppem" << endl
+               << setw(8) << setfill(' ') << metrics.y_ppem << ", // y_ppem" << endl
+               << setw(8) << setfill(' ') << metrics.x_scale << ", // x_scale" << endl
+               << setw(8) << setfill(' ') << metrics.y_scale << ", // y_scale" << endl
+               << setw(8) << setfill(' ') << metrics.ascender << ", // ascender (" << metrics.ascender / 64.0 << "px)" << endl
+               << setw(8) << setfill(' ') << metrics.descender << ", // descender (" << metrics.descender / 64.0 << "px)" << endl
+               << setw(8) << setfill(' ') << metrics.height << ", // height (" << metrics.height / 64.0 << "px)" << endl
+               << setw(8) << setfill(' ') << metrics.max_advance << "  // max_advance (" << metrics.max_advance / 64.0 << "px)" << endl
+               << "}";
+}
+
 int main(int argc, const char *const *argv)
 {
     FT_Library library;
@@ -120,6 +133,7 @@ int main(int argc, const char *const *argv)
     OutputFormat format = OUTPUT_HEADER;
     bool include_unicode = false;
     bool include_font = true;
+    int point_size = 36;
     const char *ns = nullptr;
 
     while (argc > 1 && argv[1][0] == '-')
@@ -139,6 +153,20 @@ int main(int argc, const char *const *argv)
             }
             cerr << "Output " << arg << endl;
             outfile.open(arg, ios::out | ios::binary);
+            break;
+
+        case 'p':
+            if (arg[2] == 0)
+            {
+                if (argc < 2)
+                    usage();
+
+                arg = argv[2];
+                argv++;
+                argc--;
+            }
+            cerr << "Point size" << arg << endl;
+            point_size = atoi(arg);
             break;
 
         case 'n':
@@ -209,13 +237,6 @@ int main(int argc, const char *const *argv)
     {
         cerr << "Processing " << argv[0] << endl;
 
-        if (ns && format == OUTPUT_HEADER)
-        {
-            outfile << endl
-                    << "namespace " << ns << " {" << endl
-                    << endl;
-        }
-
         FT_Face face;
         error = FT_New_Face(library, argv[0], 0, &face);
         if (error)
@@ -225,14 +246,24 @@ int main(int argc, const char *const *argv)
 
         error = FT_Set_Char_Size(face,
                                  0,
-                                 36 << 6,
-                                 72,
-                                 72);
+                                 point_size << 6,
+                                 144,
+                                 144);
         if (error)
         {
             Panic("Could not set character size");
         }
         bool load_unscaled = false;
+
+        if (ns && format == OUTPUT_HEADER)
+        {
+            outfile << endl
+                    << "namespace " << ns << " {" << endl
+                    << endl;
+
+            outfile << "/* FT_Size_Metrics " << face->size->metrics << " */" << endl
+                    << endl;
+        }
 
         int chn = 0;
         // for (int i = 0; i < face->num_charmaps; i++)
@@ -353,7 +384,9 @@ int main(int argc, const char *const *argv)
             outfile << "}; // font_ranges" << endl
                     << endl;
 
-            outfile << "GlyphFont font = {font_glyphs, font_ranges};" << endl
+            outfile << "GlyphFont font = {font_glyphs, font_ranges, "
+                    << face->size->metrics
+                    << "};" << endl
                     << endl;
         }
 

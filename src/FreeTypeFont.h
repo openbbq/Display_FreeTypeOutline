@@ -30,6 +30,6 @@ public:
         return nullptr;
     }
 
-private:
+protected:
     GlyphFont _font;
 };
