@@ -77,6 +77,6 @@ protected:
 
     int16_t _x = 0;
     int16_t _y = 0;
-    uint16_t _foreground = 0xffffff;
-    uint16_t _background = 0x000000;
+    uint16_t _foreground = 0xffffu;
+    uint16_t _background = 0x0000u;
 };

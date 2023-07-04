@@ -19,7 +19,7 @@ namespace display
         // TODO(loudej) left and right glyph overflow
         // also - ascender and descender are not the same as line height
         Rect rc(0, -asc, (horiAdvance + 63) >> 6, desc);
-        log_d("measured %s for %s", rc.toString().c_str(), text.c_str());
+        log_v("measured %s for %s", rc.toString().c_str(), text.c_str());
         return rc;
     }
 
