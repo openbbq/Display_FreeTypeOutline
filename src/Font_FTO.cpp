@@ -23,7 +23,7 @@ namespace display
         return rc;
     }
 
-    void Font_FTO_span(int32_t x, int32_t y, uint32_t w, uint32_t color, void *param)
+    void Font_FTO_span(int32_t x, int32_t y, uint32_t w, uint16_t color, void *param)
     {
         DrawContext *ctx = (DrawContext *)param;
         ctx->draw(Rect(x, y, x + w, y + 1), color);
@@ -31,7 +31,10 @@ namespace display
 
     void Font_FTO::draw(DrawContext *ctx, const Rect &clipBox, Color background, Color foreground, int16_t x, int16_t y, const String &text) const
     {
-        log_d("draw {%d,%d} in %s for %s", x,y,clipBox.toString().c_str(), text.c_str());
+        log_d("at:{%d,%d} clip:%s text:'%s' bg:#%06X/0x%05X fg:#%06X/0x%04X",
+              x, y, clipBox.toString().c_str(), text.c_str(),
+              background.to888(), (int)background.to565(),
+              foreground.to888(), (int)foreground.to565());
 
         FreeTypePrinter printer;
         printer.callback(Font_FTO_span, ctx);

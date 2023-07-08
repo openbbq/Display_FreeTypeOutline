@@ -15,7 +15,7 @@ public:
     FreeTypePrinter();
     FreeTypePrinter(FreeTypeRaster &raster);
 
-    void callback(void (*cb)(int32_t x, int32_t y, uint32_t w, uint32_t color, void *param), void *param)
+    void callback(void (*cb)(int32_t x, int32_t y, uint32_t w, uint16_t color, void *param), void *param)
     {
         _cb = cb;
         _param = param;
@@ -68,7 +68,7 @@ protected:
     static void spanFunc(int y, int count, const FT_Span *spans, void *user);
     void drawSpans(int32_t yRaster, int32_t count, const FreeTypeSpan *spans);
 
-    void (*_cb)(int32_t x, int32_t y, uint32_t w, uint32_t color, void *param);
+    void (*_cb)(int32_t x, int32_t y, uint32_t w, uint16_t color, void *param);
     void *_param;
 
     FreeTypeRaster *_raster;

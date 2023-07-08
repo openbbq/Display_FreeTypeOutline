@@ -36,7 +36,7 @@
 FreeType_GFX<Adafruit_ILI9341> tft(TFT_CS, TFT_DC, TFT_RST);
 FreeTypePrinter printer;
 
-void Adafruit_GFX_drawFastHLine(int32_t x, int32_t y, uint32_t w, uint32_t color, void *param)
+void Adafruit_GFX_drawFastHLine(int32_t x, int32_t y, uint32_t w, uint16_t color, void *param)
 {
     ((Adafruit_GFX *)param)->drawFastHLine(x, y, w, color);
 }
